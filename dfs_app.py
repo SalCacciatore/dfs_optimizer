@@ -125,11 +125,17 @@ except Exception as e:
     st.error(f"Cleaning failed (check % and $ formatting): {e}")
     st.stop()
 
-with st.expander(f"Player pool ({len(df)} players)", expanded=False):
-    st.dataframe(df[REQUIRED_COLS], use_container_width=True, hide_index=True)
-
 # Sidebar settings
 st.sidebar.header("Settings")
+own_field = st.sidebar.radio("Ownership field size", ['Small Field', 'Large Field'])
+df['Projected Ownership'] = df[own_field]
+
+DISPLAY_COLS = ['Player', 'DK Pos', 'DK Salary', 'DK Proj', 'DK Ceiling',
+                'DK Floor', 'Projected Ownership']
+
+with st.expander(f"Player pool ({len(df)} players)", expanded=False):
+    st.dataframe(df[DISPLAY_COLS], use_container_width=True, hide_index=True)
+
 num_lineups = st.sidebar.number_input("Number of lineups", min_value=1, max_value=150, value=20, step=1)
 optimize_for = st.sidebar.radio("Optimize for", ['ceiling', 'projection'],
                                 format_func=str.capitalize)
@@ -159,6 +165,7 @@ if st.session_state.get('status_msg'):
     st.warning(st.session_state['status_msg'])
 
 all_lu = pd.concat(lineups)
+all_lu['Projected Ownership'] = all_lu[own_field]
 
 # Summary table
 summary = all_lu.groupby('Lineup').agg(
@@ -166,11 +173,10 @@ summary = all_lu.groupby('Lineup').agg(
     Proj=('DK Proj', 'sum'),
     Ceiling=('DK Ceiling', 'sum'),
     Floor=('DK Floor', 'sum'),
-    Own_Small=('Small Field', 'sum'),
-    Own_Large=('Large Field', 'sum'),
+    Own=('Projected Ownership', 'sum'),
 ).round(2).reset_index()
 summary.columns = ['Lineup', 'Salary', 'Proj', 'Ceiling', 'Floor',
-                   'Total Own (Small %)', 'Total Own (Large %)']
+                   'Projected Ownership (%)']
 
 st.subheader(f"{len(lineups)} lineups")
 st.dataframe(summary, use_container_width=True, hide_index=True)
@@ -191,19 +197,18 @@ with col1:
     pos_order = {'QB': 0, 'RB': 1, 'WR': 2, 'TE': 3, 'DST': 4}
     for lu in lineups:
         n = lu['Lineup'].iloc[0]
+        lu = lu.assign(**{'Projected Ownership': lu[own_field]})
         lu = lu.assign(_o=lu['DK Pos'].map(pos_order)).sort_values(['_o', 'DK Salary'],
                                                                   ascending=[True, False])
         label = (f"Lineup {n} — ${lu['DK Salary'].sum():,.0f} | "
                  f"Proj {lu['DK Proj'].sum():.2f} | Ceil {lu['DK Ceiling'].sum():.2f} | Floor {lu['DK Floor'].sum():.2f}")
         with st.expander(label, expanded=(n == 1)):
-            st.dataframe(lu[['Player', 'DK Pos', 'DK Salary', 'DK Proj', 'DK Ceiling',
-                             'DK Floor', 'Small Field', 'Large Field']],
+            st.dataframe(lu[DISPLAY_COLS],
                          use_container_width=True, hide_index=True)
 
 st.download_button(
     "Download all lineups (CSV)",
-    all_lu[['Lineup', 'Player', 'DK Pos', 'DK Salary', 'DK Proj', 'DK Ceiling',
-            'DK Floor', 'Small Field', 'Large Field']].to_csv(index=False),
+    all_lu[['Lineup'] + DISPLAY_COLS].to_csv(index=False),
     file_name="lineups.csv",
     mime="text/csv",
 )
