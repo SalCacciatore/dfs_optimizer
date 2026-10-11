@@ -135,6 +135,12 @@ DISPLAY_COLS = ['Player', 'DK Pos', 'DK Salary', 'DK Proj', 'DK Ceiling',
 
 with st.expander(f"Player pool ({len(df)} players)", expanded=False):
     st.dataframe(df[DISPLAY_COLS], use_container_width=True, hide_index=True)
+    st.download_button(
+        "Download player pool (CSV)",
+        df[DISPLAY_COLS].to_csv(index=False),
+        file_name="player_pool.csv",
+        mime="text/csv",
+    )
 
 num_lineups = st.sidebar.number_input("Number of lineups", min_value=1, max_value=150, value=20, step=1)
 optimize_for = st.sidebar.radio("Optimize for", ['ceiling', 'projection'],
