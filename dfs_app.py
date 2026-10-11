@@ -194,7 +194,7 @@ with col1:
         lu = lu.assign(_o=lu['DK Pos'].map(pos_order)).sort_values(['_o', 'DK Salary'],
                                                                   ascending=[True, False])
         label = (f"Lineup {n} — ${lu['DK Salary'].sum():,.0f} | "
-                 f"Proj {lu['DK Proj'].sum():.2f} | Ceil {lu['DK Ceiling'].sum():.2f}")
+                 f"Proj {lu['DK Proj'].sum():.2f} | Ceil {lu['DK Ceiling'].sum():.2f} | Floor {lu['DK Floor'].sum():.2f}")
         with st.expander(label, expanded=(n == 1)):
             st.dataframe(lu[['Player', 'DK Pos', 'DK Salary', 'DK Proj', 'DK Ceiling',
                              'DK Floor', 'Small Field', 'Large Field']],
